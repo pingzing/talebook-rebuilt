@@ -1,0 +1,28 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <MSBuildAllProjects>$(MSBuildAllProjects);$(MSBuildThisFileFullPath)</MSBuildAllProjects>
+    <HasSharedItems>true</HasSharedItems>
+    <SharedGUID>0b1c0763-666c-4cd4-a6f8-c21d8c8b3861</SharedGUID>
+  </PropertyGroup>
+  <PropertyGroup Label="Configuration">
+    <Import_RootNamespace>TalebookRebuilt</Import_RootNamespace>
+  </PropertyGroup>
+  <ItemGroup>
+    <ApplicationDefinition Include="$(MSBuildThisFileDirectory)App.xaml">
+      <SubType>Designer</SubType>
+    </ApplicationDefinition>
+    <Compile Include="$(MSBuildThisFileDirectory)App.xaml.cs">
+      <DependentUpon>App.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="$(MSBuildThisFileDirectory)Helpers\BookBuilder.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Helpers\RichTextBlockProperties.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Models\TaleBook.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Models\TalePage.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Models\TaleSubpage.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)ViewModels\TalePageViewModel.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="$(MSBuildThisFileDirectory)Tales\Snowbird.html" />
+  </ItemGroup>
+</Project>
