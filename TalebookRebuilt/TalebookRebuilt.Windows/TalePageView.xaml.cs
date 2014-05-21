@@ -25,10 +25,10 @@ namespace TalebookRebuilt
     /// </summary>
     public sealed partial class TalePageView : Page
     {
-        
+
         private NavigationHelper navigationHelper;
         private ObservableDictionary defaultViewModel = new ObservableDictionary();
-        
+
 
         /// <summary>
         /// This can be changed to a strongly typed view model.
@@ -49,15 +49,16 @@ namespace TalebookRebuilt
 
 
         public TalePageView()
-        {            
+        {
             this.InitializeComponent();
             this.DataContext = new ViewModels.TalePageViewModel();
             this.navigationHelper = new NavigationHelper(this);
             this.navigationHelper.LoadState += navigationHelper_LoadState;
-            this.navigationHelper.SaveState += navigationHelper_SaveState;  
+            this.navigationHelper.SaveState += navigationHelper_SaveState;
 #if DEBUG
             this.resolutionBlock.Visibility = Visibility.Visible;
-#endif         
+#endif
+            System.Diagnostics.Debug.WriteLine(TextPanel.MaxHeight + " & " + TextPanel.MaxWidth);
         }
 
         /// <summary>
@@ -108,11 +109,13 @@ namespace TalebookRebuilt
             navigationHelper.OnNavigatedFrom(e);
         }
 
-        #endregion
+        #endregion        
 
-        private void Button_Click(object sender, RoutedEventArgs e)
-        {
-
+        private void Button_Click_1(object sender, RoutedEventArgs e)
+        {            
+            var html = PageContentBlock.GetValue(TalebookRebuilt.Helpers.Properties.HtmlProperty);
+            Size dSize = PageContentBlock.DesiredSize;
+            double aHeight = PageContentBlock.ActualHeight;            
         }
     }
 }

@@ -13,11 +13,11 @@ namespace TalebookRebuilt.Helpers
         //Take some form of text document and convert it to a TaleBook object
 
         /// <summary>
-        /// Reads an RTF file into a string and returns it.
+        /// Reads an HTML file, converts it into a string and returns the string.
         /// </summary>
-        /// <param name="fileName"> The file name of the .RTF file to be read. </param>
-        /// <returns>A string containing the entirety of the RTF document, including formatting 
-        /// text, or an empty string if the file does not exist.</returns>
+        /// <param name="fileName"> The file name of the .HTML file to be read. </param>
+        /// <returns>A string containing the entirety of the HTML document,
+        /// or an empty string if the file does not exist.</returns>
         public async static Task<string> HtmlToString(string fileName)
         {
             StorageFolder folder = Windows.ApplicationModel.Package.Current.InstalledLocation;
@@ -38,7 +38,6 @@ namespace TalebookRebuilt.Helpers
                     }
                 }
             }
-
             return htmlString;
         }
     }

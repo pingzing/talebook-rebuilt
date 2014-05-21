@@ -1,20 +1,26 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.IO;
 using System.Text;
 using System.Windows.Input;
 using TalebookRebuilt.Helpers;
 using TalebookRebuilt.Models;
+using Windows.Foundation;
 using Windows.UI;
 using Windows.UI.Core;
 using Windows.UI.Xaml;
 using Windows.UI.Xaml.Controls;
+using Windows.UI.Xaml.Data;
+using Windows.UI.Xaml.Documents;
 
 namespace TalebookRebuilt.ViewModels
 {
     public class TalePageViewModel : INotifyPropertyChanged
     {
+        private const int HEADER_HEIGHT = 120;
+
         private TaleBook currentBook;
         public TaleBook CurrentBook
         {
@@ -26,25 +32,14 @@ namespace TalebookRebuilt.ViewModels
             }
         }
 
-        private TalePage currentPage;
-        public TalePage CurrentPage
+        private ObservablePages currentPage;
+        public ObservablePages CurrentPage
         {
             get { return currentPage; }
             set
             {
                 currentPage = value;
                 NotifyPropertyChanged("CurrentPage");
-            }
-        }
-
-        private TaleSubpage currentSubpage;
-        public TaleSubpage CurrentSubpage
-        {
-            get { return currentSubpage; }
-            set
-            {
-                currentSubpage = value;
-                NotifyPropertyChanged("CurrentSubpage");
             }
         }
 
@@ -59,26 +54,42 @@ namespace TalebookRebuilt.ViewModels
             }
         }
 
-        private int textboxHeight;
-        public int TextboxHeight
+        private double textboxMaxHeight;
+        public double TextboxMaxHeight
         {
-            get { return textboxHeight; }
+            get { return textboxMaxHeight; }
             set
             {
-                textboxHeight = value;
-                NotifyPropertyChanged("TextboxHeight");
+                textboxMaxHeight = value;
+                NotifyPropertyChanged("TextboxMaxHeight");
             }
         }
 
-        private int textboxWidth;
-        public int TextboxWidth
+        private double textboxMaxWidth;
+        public double TextboxMaxWidth
         {
-            get { return textboxWidth; }
+            get { return textboxMaxWidth; }
             set
             {
-                this.textboxWidth = value;
-                NotifyPropertyChanged("TextboxWidth");
+                this.textboxMaxWidth = value;
+                NotifyPropertyChanged("TextboxMaxWidth");
             }
+        }
+
+        private DelegateCommand<ObservablePages> updateSizeCommand;
+        public DelegateCommand<ObservablePages> UpdateSizeCommand
+        {
+            get { return updateSizeCommand; }
+            set { updateSizeCommand = value; }
+        }
+        private void OnUpdateSizeCommand(ObservablePages itemSource)
+        {
+            if (itemSource.Count > 1 && ((RichTextBlock)itemSource[itemSource.Count - 1]).HasOverflowContent)
+            {
+                //add more overflow boxes
+            }
+            RichTextBlock mainBlock = itemSource[0] as RichTextBlock;
+
         }
 
         public event PropertyChangedEventHandler PropertyChanged;
@@ -93,15 +104,42 @@ namespace TalebookRebuilt.ViewModels
 
         public TalePageViewModel()
         {
-            BuildPages();
-            this.WindowBoundsString = "Height: " + Window.Current.Bounds.Height + " Width: " + Window.Current.Bounds.Width;
             Window.Current.SizeChanged += Current_SizeChanged;
+            InitializeControls();
+            BuildPages();
+        }
+
+        private void InitializeControls()
+        {
+            //Prepare sizes for our poor, silly StackPanel
+            var size = Window.Current.Bounds;
+            double heightMargin = 40.00;
+            double widthMargin = 10.00;
+            this.TextboxMaxHeight = size.Height - HEADER_HEIGHT - heightMargin;
+            this.TextboxMaxWidth = size.Width / 2 - widthMargin;
+
+            //Define commands
+            this.updateSizeCommand = new DelegateCommand<ObservablePages>(this.OnUpdateSizeCommand);
+
+            //Initialize CurrentPage
+            this.CurrentPage = new ObservablePages();
+
+            //Debug
+            this.WindowBoundsString = "MaxHeight: " + this.TextboxMaxHeight + " MaxWidth: " + this.TextboxMaxWidth;
         }
 
         void Current_SizeChanged(object sender, WindowSizeChangedEventArgs e)
         {
             var size = e.Size;
-            this.WindowBoundsString = "Height: " + size.Height + " Width: " + size.Width;
+            double heightMargin = 40.00;
+            double widthMargin = 10.00;
+            this.TextboxMaxHeight = size.Height - HEADER_HEIGHT - heightMargin;
+            this.TextboxMaxWidth = size.Width / 2 - widthMargin;
+
+#if DEBUG
+            this.WindowBoundsString = "MaxHeight: " + this.TextboxMaxHeight + " MaxWidth: " + this.TextboxMaxWidth;
+#endif
+
         }
 
         async private void BuildPages()
@@ -118,9 +156,94 @@ namespace TalebookRebuilt.ViewModels
             currentBook.Description = "Test description";
             currentBook.Title = "Test Title";
             CurrentBook = currentBook;
+            BuildPagesNew();
 
-            CurrentPage = CurrentBook.Pages[0];
+            //RichTextBlock pageOne = new RichTextBlock();
+            //pageOne.Width = double.NaN;
+            //pageOne.Height = double.NaN;
+            //pageOne.MaxWidth = this.TextboxMaxWidth;
+            //pageOne.MaxHeight = this.TextboxMaxHeight;
+            //pageOne.HorizontalAlignment = HorizontalAlignment.Left;
+            //pageOne.VerticalAlignment = VerticalAlignment.Top;
+            //pageOne.IsDoubleTapEnabled = false;
+            //pageOne.IsHitTestVisible = false;
+            //pageOne.IsHoldingEnabled = false;
+            //pageOne.IsTextSelectionEnabled = false;
+            //pageOne.IsTapEnabled = false;
+            //pageOne.SetValue(Helpers.Properties.HtmlProperty, CurrentBook.Pages[0].PageContent);
+
+            //pageOne.Measure(new Size(this.TextboxMaxWidth, this.TextboxMaxHeight));
+            //CurrentPage.Add(pageOne);
+            //CurrentPage = CurrentBook.Pages[0];
             //End test code
+        }
+
+        //TODO: Add the RichTextBoxOverflows to the visual tree
+        private void BuildPagesNew()
+        {
+            CurrentPage.Clear();            
+            RichTextBlockOverflow lastOverflow;
+            lastOverflow = AddOnePage(null);
+            
+            while(lastOverflow.HasOverflowContent)
+            {
+                lastOverflow = AddOnePage(lastOverflow);
+            }
+        }
+
+        private RichTextBlockOverflow AddOnePage(RichTextBlockOverflow lastOverflow)
+        {
+            bool isFirstPage = lastOverflow == null;
+            RichTextBlockOverflow rtbo = new RichTextBlockOverflow();
+
+            if (isFirstPage)
+            {
+                RichTextBlock pageOne = new RichTextBlock();
+                pageOne.Width = double.NaN;
+                pageOne.Height = double.NaN;
+                pageOne.MaxWidth = this.TextboxMaxWidth;
+                pageOne.MaxHeight = this.TextboxMaxHeight;
+                pageOne.HorizontalAlignment = HorizontalAlignment.Left;
+                pageOne.VerticalAlignment = VerticalAlignment.Top;
+                pageOne.IsDoubleTapEnabled = false;
+                pageOne.IsHitTestVisible = false;
+                pageOne.IsHoldingEnabled = false;
+                pageOne.IsTextSelectionEnabled = false;
+                pageOne.IsTapEnabled = false;
+                pageOne.SetValue(Helpers.Properties.HtmlProperty, CurrentBook.Pages[0].PageContent);
+                pageOne.SetBinding(RichTextBlock.MaxWidthProperty, new Binding
+                    {
+                        Source = TextboxMaxWidth,
+                        Path = new PropertyPath("MaxWidth")
+                    });
+                pageOne.SetBinding(RichTextBlock.MaxHeightProperty, new Binding
+                    {
+                        Source = TextboxMaxHeight,
+                        Path = new PropertyPath("MaxHeight")
+                    });
+
+                pageOne.Measure(new Size(this.TextboxMaxWidth, this.TextboxMaxHeight));
+                CurrentPage.Add(pageOne);
+                if (pageOne.HasOverflowContent)
+                {
+                    pageOne.OverflowContentTarget = rtbo;
+                    //set width and height here?
+                    rtbo.Measure(new Size(this.TextboxMaxWidth, this.TextboxMaxHeight));
+                }
+            }
+            else
+            {
+                //set rtbo width and height here?
+                //Maybe set maxheight and maxwidth bindings too
+                if (lastOverflow.HasOverflowContent)
+                {
+                    lastOverflow.OverflowContentTarget = rtbo;
+                    lastOverflow.Measure(new Size(this.TextboxMaxWidth, this.TextboxMaxHeight));
+                    rtbo.Measure((new Size(this.TextboxMaxWidth, this.TextboxMaxHeight)));
+                }
+                this.CurrentPage.Add(rtbo);
+            }
+            return rtbo;
         }
 
     }
