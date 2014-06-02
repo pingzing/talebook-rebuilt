@@ -109,13 +109,13 @@ namespace TalebookRebuilt
             navigationHelper.OnNavigatedFrom(e);
         }
 
-        #endregion        
+        #endregion
 
         private void Button_Click_1(object sender, RoutedEventArgs e)
-        {            
+        {
             var html = PageContentBlock.GetValue(TalebookRebuilt.Helpers.Properties.HtmlProperty);
             Size dSize = PageContentBlock.DesiredSize;
-            double aHeight = PageContentBlock.ActualHeight;            
+            double aHeight = PageContentBlock.ActualHeight;
         }
     }
 }

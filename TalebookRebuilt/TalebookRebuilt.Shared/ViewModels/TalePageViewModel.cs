@@ -14,6 +14,7 @@ using Windows.UI.Xaml;
 using Windows.UI.Xaml.Controls;
 using Windows.UI.Xaml.Data;
 using Windows.UI.Xaml.Documents;
+using Windows.UI.Xaml.Media;
 
 namespace TalebookRebuilt.ViewModels
 {
@@ -32,8 +33,8 @@ namespace TalebookRebuilt.ViewModels
             }
         }
 
-        private ObservablePages currentPage;
-        public ObservablePages CurrentPage
+        private ObservableCollection<FrameworkElement> currentPage;
+        public ObservableCollection<FrameworkElement> CurrentPage
         {
             get { return currentPage; }
             set
@@ -76,21 +77,19 @@ namespace TalebookRebuilt.ViewModels
             }
         }
 
-        private DelegateCommand<ObservablePages> updateSizeCommand;
-        public DelegateCommand<ObservablePages> UpdateSizeCommand
+        private DelegateCommand<object> updateSizeCommand;
+        public DelegateCommand<object> UpdateSizeCommand
         {
             get { return updateSizeCommand; }
             set { updateSizeCommand = value; }
         }
-        private void OnUpdateSizeCommand(ObservablePages itemSource)
+        private void OnUpdateSizeCommand(object itemSource)
         {
-            if (itemSource.Count > 1 && ((RichTextBlock)itemSource[itemSource.Count - 1]).HasOverflowContent)
-            {
-                //add more overflow boxes
-            }
-            RichTextBlock mainBlock = itemSource[0] as RichTextBlock;
-
+            StackPanel textPanel = itemSource as StackPanel;
+            TextPanel = textPanel;
+            BuildPagesNew();
         }
+        public StackPanel TextPanel { get; set; }
 
         public event PropertyChangedEventHandler PropertyChanged;
 
@@ -102,6 +101,7 @@ namespace TalebookRebuilt.ViewModels
             }
         }
 
+        //TODO: Refactor TalePage so that the Subpages member is a class that implements INotifyPropertyChanged
         public TalePageViewModel()
         {
             Window.Current.SizeChanged += Current_SizeChanged;
@@ -119,10 +119,10 @@ namespace TalebookRebuilt.ViewModels
             this.TextboxMaxWidth = size.Width / 2 - widthMargin;
 
             //Define commands
-            this.updateSizeCommand = new DelegateCommand<ObservablePages>(this.OnUpdateSizeCommand);
+            this.updateSizeCommand = new DelegateCommand<object>(this.OnUpdateSizeCommand);
 
             //Initialize CurrentPage
-            this.CurrentPage = new ObservablePages();
+            this.CurrentPage = new ObservableCollection<FrameworkElement>();
 
             //Debug
             this.WindowBoundsString = "MaxHeight: " + this.TextboxMaxHeight + " MaxWidth: " + this.TextboxMaxWidth;
@@ -149,14 +149,13 @@ namespace TalebookRebuilt.ViewModels
             string resultString = await BookBuilder.HtmlToString(filePath);
 
             currentBook = new TaleBook();
-            currentBook.Pages = new System.Collections.ObjectModel.ObservableCollection<TalePage>();
+            currentBook.Pages = new List<TalePage>();
             currentBook.Pages.Add(new TalePage(resultString, null, Colors.Black));
 
             currentBook.Cover = new Image();
             currentBook.Description = "Test description";
             currentBook.Title = "Test Title";
-            CurrentBook = currentBook;
-            BuildPagesNew();
+            CurrentBook = currentBook;            
 
             //RichTextBlock pageOne = new RichTextBlock();
             //pageOne.Width = double.NaN;
@@ -182,13 +181,15 @@ namespace TalebookRebuilt.ViewModels
         private void BuildPagesNew()
         {
             CurrentPage.Clear();            
-            RichTextBlockOverflow lastOverflow;
+            RichTextBlockOverflow lastOverflow;            
             lastOverflow = AddOnePage(null);
-            
+            CurrentPage.Add(lastOverflow);            
+
             while(lastOverflow.HasOverflowContent)
             {
-                lastOverflow = AddOnePage(lastOverflow);
+                lastOverflow = AddOnePage(lastOverflow);                           
             }
+            TextPanel.Children[0].UpdateLayout();
         }
 
         private RichTextBlockOverflow AddOnePage(RichTextBlockOverflow lastOverflow)
@@ -201,6 +202,7 @@ namespace TalebookRebuilt.ViewModels
                 RichTextBlock pageOne = new RichTextBlock();
                 pageOne.Width = double.NaN;
                 pageOne.Height = double.NaN;
+                pageOne.FontSize = 16.00;
                 pageOne.MaxWidth = this.TextboxMaxWidth;
                 pageOne.MaxHeight = this.TextboxMaxHeight;
                 pageOne.HorizontalAlignment = HorizontalAlignment.Left;
@@ -245,6 +247,5 @@ namespace TalebookRebuilt.ViewModels
             }
             return rtbo;
         }
-
     }
 }
