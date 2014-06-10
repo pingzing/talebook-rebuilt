@@ -54,16 +54,19 @@
                 <ColumnDefinition Width="*"/>
             </Grid.ColumnDefinitions>
             <Image Grid.Column="0" VerticalAlignment="Center" HorizontalAlignment="Center" Width="Auto" Height="Auto" Source=""/>
-            <StackPanel x:Name="TextPanel" Grid.Column="1" HorizontalAlignment="Center" Height="Auto" VerticalAlignment="Center" Width="Auto" MaxHeight="{Binding TextboxMaxHeight, FallbackValue=400, Mode=OneWay}" MaxWidth="{Binding TextboxMaxWidth, FallbackValue=400, Mode=OneWay}">
-                <i:Interaction.Behaviors>
-                    <core:EventTriggerBehavior>
-                        <core:InvokeCommandAction Command="{Binding UpdateSizeCommand}" CommandParameter="{Binding ElementName=TextPanel}"/>
-                    </core:EventTriggerBehavior>
-                </i:Interaction.Behaviors>
-                <FlipView x:Name="PageContentBlock" Grid.Column="1" 
-					Height="Auto" Width="Auto" HorizontalAlignment="Center" VerticalAlignment="Center" 
-					MaxHeight="{Binding TextboxMaxHeight, Mode=OneWay}" ItemsSource="{Binding CurrentPage}"/>
-            </StackPanel>
+            <FlipView x:Name="TextFlipView" VerticalAlignment="Center" Grid.Column="1" Height="{Binding TextboxMaxHeight}" Width="{Binding TextboxMaxWidth}"
+                HorizontalAlignment="Center" MaxHeight="{Binding TextboxMaxHeight, Mode=OneWay}" ItemsSource="{Binding CurrentPage}">
+            	<i:Interaction.Behaviors>
+            		<core:EventTriggerBehavior EventName="SizeChanged">
+            			<core:InvokeCommandAction Command="{Binding UpdateSizeCommand}" CommandParameter="{Binding ElementName=TextFlipView}"/>
+            		</core:EventTriggerBehavior>
+            	</i:Interaction.Behaviors>
+                <FlipView.ItemsPanel>
+                    <ItemsPanelTemplate>
+                        <StackPanel Orientation="Horizontal"></StackPanel>
+                    </ItemsPanelTemplate>
+                </FlipView.ItemsPanel>
+            </FlipView>
             <Button Content="Button" HorizontalAlignment="Left" Height="42" Margin="556,526,0,0" VerticalAlignment="Top" Width="127" Click="Button_Click_1"/>
         </Grid>
     </Grid>

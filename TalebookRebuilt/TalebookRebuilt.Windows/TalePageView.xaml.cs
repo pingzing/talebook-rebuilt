@@ -58,7 +58,7 @@ namespace TalebookRebuilt
 #if DEBUG
             this.resolutionBlock.Visibility = Visibility.Visible;
 #endif
-            System.Diagnostics.Debug.WriteLine(TextPanel.MaxHeight + " & " + TextPanel.MaxWidth);
+            //System.Diagnostics.Debug.WriteLine(TextPanel.MaxHeight + " & " + TextPanel.MaxWidth);
         }
 
         /// <summary>
@@ -113,9 +113,10 @@ namespace TalebookRebuilt
 
         private void Button_Click_1(object sender, RoutedEventArgs e)
         {
-            var html = PageContentBlock.GetValue(TalebookRebuilt.Helpers.Properties.HtmlProperty);
-            Size dSize = PageContentBlock.DesiredSize;
-            double aHeight = PageContentBlock.ActualHeight;
+            var html = TextFlipView.GetValue(TalebookRebuilt.Helpers.Properties.HtmlProperty);
+            var items = TextFlipView.Items;
+            Size dSize = TextFlipView.DesiredSize;
+            double aHeight = TextFlipView.ActualHeight;
         }
     }
 }
