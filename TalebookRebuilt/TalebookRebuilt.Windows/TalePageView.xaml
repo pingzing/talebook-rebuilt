@@ -55,7 +55,7 @@
             </Grid.ColumnDefinitions>
             <Image Grid.Column="0" VerticalAlignment="Center" HorizontalAlignment="Center" Width="Auto" Height="Auto" Source=""/>
             <FlipView x:Name="TextFlipView" VerticalAlignment="Center" Grid.Column="1" Height="{Binding TextboxMaxHeight}" Width="{Binding TextboxMaxWidth}"
-                HorizontalAlignment="Center" MaxHeight="{Binding TextboxMaxHeight, Mode=OneWay}" ItemsSource="{Binding CurrentPage}">
+                HorizontalAlignment="Center" MaxHeight="{Binding TextboxMaxHeight, Mode=OneWay}" ItemsSource="{Binding DrawnPages}">
             	<i:Interaction.Behaviors>
             		<core:EventTriggerBehavior EventName="SizeChanged">
             			<core:InvokeCommandAction Command="{Binding UpdateSizeCommand}" CommandParameter="{Binding ElementName=TextFlipView}"/>

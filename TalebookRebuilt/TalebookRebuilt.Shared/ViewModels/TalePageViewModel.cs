@@ -33,13 +33,13 @@ namespace TalebookRebuilt.ViewModels
             }
         }
 
-        private ObservableCollection<FrameworkElement> currentPage;
-        public ObservableCollection<FrameworkElement> CurrentPage
+        private ObservableCollection<FrameworkElement> drawnPages;
+        public ObservableCollection<FrameworkElement> DrawnPages
         {
-            get { return currentPage; }
+            get { return drawnPages; }
             set
             {
-                currentPage = value;
+                drawnPages = value;
                 NotifyPropertyChanged("CurrentPage");
             }
         }
@@ -84,30 +84,69 @@ namespace TalebookRebuilt.ViewModels
             set { updateSizeCommand = value; }
         }
         private void OnUpdateSizeCommand(object itemSource)
-        {           
+        {
             //Get current character-location
             FlipView flip = itemSource as FlipView;
-            int currLoc;
-            if(flip != null)
+            int locToRestore = 0;
+            if (flip != null)
             {
                 var currRtb = flip.SelectedItem;
-                if(currRtb is RichTextBlock)
+                if (currRtb is RichTextBlock)
                 {
-                    currLoc = ((RichTextBlock)currRtb).ContentStart.Offset;
+                    locToRestore = ((RichTextBlock)currRtb).ContentStart.Offset;
                 }
                 else if (currRtb is RichTextBlockOverflow)
                 {
-                    currLoc = ((RichTextBlockOverflow)currRtb).ContentStart.Offset;
+                    locToRestore = ((RichTextBlockOverflow)currRtb).ContentStart.Offset;
                 }
             }
 
-            BuildPagesNew();  
-          
-            //If we have the old character-location, restore the reader's current page
-            //Search through currentPage's elements until we find the correct offset. 
-            //set flip.SelectedIndex to that element's index
+            DrawPages();
+            if (flip != null)
+            {
+                flip.UpdateLayout();
+                var dispatcher = Windows.UI.Core.CoreWindow.GetForCurrentThread().Dispatcher;
+                //Force this to run on the UI thread, so we KNOW it'll wait until the text is 
+                //properly distributed to all the RTBOverflows
+                dispatcher.RunAsync(CoreDispatcherPriority.Normal, () =>
+                    {
+                        RestoreReadingLocation(flip, locToRestore);
+                    });
+            }
+        }
 
-        }        
+        //If we have the old character-location, restore the reader's current page
+        //Search through currentPage's elements until we find the correct offset. 
+        //set flip.SelectedIndex to that element's index
+        private void RestoreReadingLocation(FlipView flip, int locToRestore)
+        {
+            int restoreIndex = -1;
+            foreach (var subpage in DrawnPages)
+            {
+                if (subpage is RichTextBlock)
+                {
+                    if (((RichTextBlock)subpage).ContentEnd.Offset >= locToRestore
+                        && !(((RichTextBlock)subpage).ContentStart.Offset > locToRestore))
+                    {
+                        restoreIndex = DrawnPages.IndexOf(subpage);
+                        break;
+                    }
+                }
+                else if (subpage is RichTextBlockOverflow)
+                {
+                    if (((RichTextBlockOverflow)subpage).ContentEnd.Offset >= locToRestore
+                        && !(((RichTextBlockOverflow)subpage).ContentStart.Offset > locToRestore))
+                    {
+                        restoreIndex = DrawnPages.IndexOf(subpage);
+                        break;
+                    }
+                }
+            }
+            if (restoreIndex != -1)
+            {
+                flip.SelectedIndex = restoreIndex;
+            }
+        }
 
         public event PropertyChangedEventHandler PropertyChanged;
         protected void NotifyPropertyChanged(String info)
@@ -117,7 +156,7 @@ namespace TalebookRebuilt.ViewModels
                 PropertyChanged(this, new PropertyChangedEventArgs(info));
             }
         }
-        
+
         public TalePageViewModel()
         {
             Window.Current.SizeChanged += Current_SizeChanged;
@@ -126,7 +165,7 @@ namespace TalebookRebuilt.ViewModels
         }
 
         private void InitializeControls()
-        {            
+        {
             var size = Window.Current.Bounds;
             double heightMargin = 40.00;
             double widthMargin = 10.00;
@@ -137,7 +176,7 @@ namespace TalebookRebuilt.ViewModels
             this.updateSizeCommand = new DelegateCommand<object>(this.OnUpdateSizeCommand);
 
             //Initialize CurrentPage
-            this.CurrentPage = new ObservableCollection<FrameworkElement>();
+            this.DrawnPages = new ObservableCollection<FrameworkElement>();
 
             //Debug
             this.WindowBoundsString = "MaxHeight: " + this.TextboxMaxHeight + " MaxWidth: " + this.TextboxMaxWidth;
@@ -147,8 +186,13 @@ namespace TalebookRebuilt.ViewModels
         void Current_SizeChanged(object sender, WindowSizeChangedEventArgs e)
         {
             var size = e.Size;
+#if WINDOWS_APP
             double heightMargin = 40.00;
             double widthMargin = 10.00;
+#elif WINDOWS_PHONE_APP
+            double heightMargin = 0.00;
+            double widthMargin = 0.00;
+#endif
             this.TextboxMaxHeight = size.Height - HEADER_HEIGHT - heightMargin;
             this.TextboxMaxWidth = size.Width / 2 - widthMargin;
 
@@ -172,24 +216,24 @@ namespace TalebookRebuilt.ViewModels
             currentBook.Description = "Test description";
             currentBook.Title = "Test Title";
             CurrentBook = currentBook;
-            BuildPagesNew();            
+            DrawPages();
             //End test code
         }
-        
-        private void BuildPagesNew()
-        {
-            CurrentPage.Clear();            
-            RichTextBlockOverflow lastOverflow;            
-            lastOverflow = AddOnePage(null);
-            CurrentPage.Add(lastOverflow);            
 
-            while(lastOverflow.HasOverflowContent)
+        private void DrawPages()
+        {
+            DrawnPages.Clear();
+            RichTextBlockOverflow lastOverflow;
+            lastOverflow = DrawOnePage(null);
+            DrawnPages.Add(lastOverflow);
+
+            while (lastOverflow.HasOverflowContent)
             {
-                lastOverflow = AddOnePage(lastOverflow);                           
-            }            
+                lastOverflow = DrawOnePage(lastOverflow);
+            }
         }
 
-        private RichTextBlockOverflow AddOnePage(RichTextBlockOverflow lastOverflow)
+        private RichTextBlockOverflow DrawOnePage(RichTextBlockOverflow lastOverflow)
         {
             bool isFirstPage = lastOverflow == null;
             RichTextBlockOverflow rtbo = new RichTextBlockOverflow();
@@ -197,15 +241,13 @@ namespace TalebookRebuilt.ViewModels
             if (isFirstPage)
             {
                 RichTextBlock pageOne = new RichTextBlock();
-                pageOne.Width = double.NaN;
-                pageOne.Height = double.NaN;
                 pageOne.FontSize = 16.00;
                 pageOne.MaxWidth = this.TextboxMaxWidth;
                 pageOne.MaxHeight = this.TextboxMaxHeight;
                 pageOne.HorizontalAlignment = HorizontalAlignment.Left;
                 pageOne.VerticalAlignment = VerticalAlignment.Top;
-                pageOne.IsDoubleTapEnabled = false;                
-                pageOne.IsHoldingEnabled = false;                                
+                pageOne.IsDoubleTapEnabled = false;
+                pageOne.IsHoldingEnabled = false;
                 pageOne.SetValue(Helpers.Properties.HtmlProperty, CurrentBook.Pages[0].PageContent);
                 pageOne.SetBinding(RichTextBlock.MaxWidthProperty, new Binding
                     {
@@ -219,24 +261,32 @@ namespace TalebookRebuilt.ViewModels
                     });
 
                 pageOne.Measure(new Size(this.TextboxMaxWidth, this.TextboxMaxHeight));
-                CurrentPage.Add(pageOne);
+                DrawnPages.Add(pageOne);
                 if (pageOne.HasOverflowContent)
                 {
-                    pageOne.OverflowContentTarget = rtbo;                    
+                    pageOne.OverflowContentTarget = rtbo;
                     rtbo.Measure(new Size(this.TextboxMaxWidth, this.TextboxMaxHeight));
                 }
             }
             else
-            {
-                //set rtbo width and height here?
-                //Maybe set maxheight and maxwidth bindings too
+            {                
+                lastOverflow.SetBinding(RichTextBlockOverflow.MaxWidthProperty, new Binding
+                    {
+                        Source = TextboxMaxWidth,
+                        Path = new PropertyPath("MaxWidth")
+                    });
+                lastOverflow.SetBinding(RichTextBlockOverflow.MaxHeightProperty, new Binding
+                    {
+                        Source=TextboxMaxHeight,
+                        Path = new PropertyPath("MaxHeight")
+                    });
                 if (lastOverflow.HasOverflowContent)
                 {
                     lastOverflow.OverflowContentTarget = rtbo;
                     lastOverflow.Measure(new Size(this.TextboxMaxWidth, this.TextboxMaxHeight));
                     rtbo.Measure((new Size(this.TextboxMaxWidth, this.TextboxMaxHeight)));
                 }
-                this.CurrentPage.Add(rtbo);
+                this.DrawnPages.Add(rtbo);
             }
             return rtbo;
         }

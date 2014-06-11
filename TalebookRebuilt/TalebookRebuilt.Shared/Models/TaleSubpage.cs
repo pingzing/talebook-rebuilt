@@ -10,16 +10,12 @@ namespace TalebookRebuilt
 {
     public class TaleSubpage
     {
-        public FrameworkElement SubpageContent { get; set; }
-        public int CharStartIndex { get; set; }
-        public int CharEndIndex { get; set; }
+        public FrameworkElement SubpageContent { get; set; }                
         public TalePage ParentPage { get; private set; }
 
-        public TaleSubpage(FrameworkElement subpageContent, int charStartIndex, int charEndIndex, TalePage parentPage)
+        public TaleSubpage(FrameworkElement subpageContent, TalePage parentPage)
         {
-            this.SubpageContent = subpageContent;
-            this.CharStartIndex = charStartIndex;
-            this.CharEndIndex = charEndIndex;
+            this.SubpageContent = subpageContent;                        
             this.ParentPage = parentPage;
         }
     }
