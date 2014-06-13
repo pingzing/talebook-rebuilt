@@ -24,6 +24,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)ViewModels\TalePageViewModel.cs" />
   </ItemGroup>
   <ItemGroup>
-    <Content Include="$(MSBuildThisFileDirectory)Tales\Snowbird.html" />
+    <Content Include="$(MSBuildThisFileDirectory)Tales\Snowbird\Snowbird.html" />
+    <Content Include="$(MSBuildThisFileDirectory)Tales\Snowbird\Snowbird.css" />
   </ItemGroup>
 </Project>

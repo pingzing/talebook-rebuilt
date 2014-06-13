@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using Windows.Storage;
 using Windows.Storage.Streams;
@@ -39,6 +40,23 @@ namespace TalebookRebuilt.Helpers
                 }
             }
             return htmlString;
+        }
+
+        public static List<string> GetSlicedPages(string htmlString)
+        {
+            //Slice the big HTML page into smaller pages based on page break style tags
+            string pageBreakToken = "<p style=\"page-break-before: always\"></p>";
+            List<string> slicedPages = new List<string>();
+            slicedPages.AddRange(htmlString.Split(new string[] { pageBreakToken }, StringSplitOptions.None));  
+         
+            //Add HTML headers for stylesheets and <head> and <body> tags to all our new little slices of HTML
+            Regex bodyRegex = new Regex("<head>(.*)</head>", RegexOptions.IgnoreCase);
+            string htmlHeader = bodyRegex.Match(htmlString).Value;
+            for (int i = 0; i < slicedPages.Count; i++)
+            {
+                slicedPages[i] = htmlHeader + "<body>" + slicedPages[i] + "</body>";
+            }
+                return slicedPages;
         }
     }
 }

@@ -88,6 +88,7 @@ namespace TalebookRebuilt.ViewModels
             //Get current character-location
             FlipView flip = itemSource as FlipView;
             int locToRestore = 0;
+            int pageToRestore = 0;
             if (flip != null)
             {
                 var currRtb = flip.SelectedItem;
@@ -205,12 +206,19 @@ namespace TalebookRebuilt.ViewModels
         async private void BuildPages()
         {
             //Test code. This method probably belongs somewhere in TaleBook.cs
-            string filePath = "Snowbird.html";
-            string resultString = await BookBuilder.HtmlToString(filePath);
+            string filePath = "Snowbird\\Snowbird.html";
+            string rawHtml = await BookBuilder.HtmlToString(filePath);
+            List<string> slicedPages = BookBuilder.GetSlicedPages(rawHtml);
 
             currentBook = new TaleBook();
             currentBook.Pages = new List<TalePage>();
-            currentBook.Pages.Add(new TalePage(resultString, null, Colors.Black));
+            //TODO: Generate/have an XML file that defines colors/images for each page?
+            int pageNum = 0;
+            foreach (var page in slicedPages)
+            {
+                currentBook.Pages.Add(new TalePage(page, null, Colors.Black, pageNum));
+                pageNum++;
+            }
 
             currentBook.Cover = new Image();
             currentBook.Description = "Test description";
@@ -220,20 +228,26 @@ namespace TalebookRebuilt.ViewModels
             //End test code
         }
 
+        //IDEA: Multi-pass rendering? One pass to get everything down, then make another pass on the UI thread to see
+        //if we missed anything/rendered too much?
         private void DrawPages()
         {
             DrawnPages.Clear();
-            RichTextBlockOverflow lastOverflow;
-            lastOverflow = DrawOnePage(null);
-            DrawnPages.Add(lastOverflow);
-
-            while (lastOverflow.HasOverflowContent)
+            foreach (var page in CurrentBook.Pages)
             {
-                lastOverflow = DrawOnePage(lastOverflow);
+                RichTextBlockOverflow lastOverflow;
+                lastOverflow = DrawOnePage(null, page.PageContent);
+                DrawnPages.Add(lastOverflow);
+
+                while (lastOverflow.HasOverflowContent)
+                {
+                    lastOverflow = DrawOnePage(lastOverflow, page.PageContent);
+                }
             }
         }
 
-        private RichTextBlockOverflow DrawOnePage(RichTextBlockOverflow lastOverflow)
+        //TODO: Split this out into DrawFirstPage and DrawSubpages
+        private RichTextBlockOverflow DrawOnePage(RichTextBlockOverflow lastOverflow, string pageContent)
         {
             bool isFirstPage = lastOverflow == null;
             RichTextBlockOverflow rtbo = new RichTextBlockOverflow();
@@ -247,8 +261,8 @@ namespace TalebookRebuilt.ViewModels
                 pageOne.HorizontalAlignment = HorizontalAlignment.Left;
                 pageOne.VerticalAlignment = VerticalAlignment.Top;
                 pageOne.IsDoubleTapEnabled = false;
-                pageOne.IsHoldingEnabled = false;
-                pageOne.SetValue(Helpers.Properties.HtmlProperty, CurrentBook.Pages[0].PageContent);
+                pageOne.IsHoldingEnabled = false;                
+                pageOne.SetValue(Helpers.Properties.HtmlProperty, pageContent);
                 pageOne.SetBinding(RichTextBlock.MaxWidthProperty, new Binding
                     {
                         Source = TextboxMaxWidth,
@@ -269,7 +283,7 @@ namespace TalebookRebuilt.ViewModels
                 }
             }
             else
-            {                
+            {
                 lastOverflow.SetBinding(RichTextBlockOverflow.MaxWidthProperty, new Binding
                     {
                         Source = TextboxMaxWidth,
@@ -277,7 +291,7 @@ namespace TalebookRebuilt.ViewModels
                     });
                 lastOverflow.SetBinding(RichTextBlockOverflow.MaxHeightProperty, new Binding
                     {
-                        Source=TextboxMaxHeight,
+                        Source = TextboxMaxHeight,
                         Path = new PropertyPath("MaxHeight")
                     });
                 if (lastOverflow.HasOverflowContent)

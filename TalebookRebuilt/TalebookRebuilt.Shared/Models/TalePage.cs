@@ -12,6 +12,7 @@ namespace TalebookRebuilt.Models
         public string PageContent { get; set; }
         public Image PageImage { get; set; }
         public Color PageColor { get; set; }
+        public int PageNumber { get; set; }
         public List<TaleSubpage> Subpages {get; set;}
 
         //Idea: Create a tale page such that it holds the maximum amount of text possible for the given device/resolution.
@@ -23,6 +24,15 @@ namespace TalebookRebuilt.Models
             PageContent = pageContent;
             PageImage = pageImage;
             PageColor = pageColor;
+            Subpages = new List<TaleSubpage>();
+        }
+
+        public TalePage(string pageContent, Image pageImage, Color pageColor, int pageNumber)
+        {
+            PageContent = pageContent;
+            PageImage = pageImage;
+            PageColor = pageColor;
+            PageNumber = pageNumber;
             Subpages = new List<TaleSubpage>();
         }
 
