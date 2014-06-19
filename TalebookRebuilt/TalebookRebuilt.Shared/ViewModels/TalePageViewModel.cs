@@ -44,6 +44,17 @@ namespace TalebookRebuilt.ViewModels
             }
         }
 
+        private int currentPageNum;
+        public int CurrentPageNum
+        {
+            get { return currentPageNum; }
+            set
+            {
+                currentPageNum = value;
+                NotifyPropertyChanged("CurrentPageNum");
+            }
+        }
+
         private string windowBoundsString;
         public string WindowBoundsString
         {
@@ -81,7 +92,11 @@ namespace TalebookRebuilt.ViewModels
         public DelegateCommand<object> UpdateSizeCommand
         {
             get { return updateSizeCommand; }
-            set { updateSizeCommand = value; }
+            set
+            {
+                updateSizeCommand = value;
+                NotifyPropertyChanged("updateSizeCommand");
+            }
         }
         private void OnUpdateSizeCommand(object itemSource)
         {
@@ -149,6 +164,22 @@ namespace TalebookRebuilt.ViewModels
             }
         }
 
+        private DelegateCommand<object> pageFlippedCommand;
+        public DelegateCommand<object> PageFlippedCommand
+        {
+            get { return pageFlippedCommand; }
+            set 
+            { 
+                pageFlippedCommand = value;
+                NotifyPropertyChanged("PageFlippedCommand");
+            }
+        }
+
+        private void OnPageFlippedCommand(object obj)
+        {
+            throw new NotImplementedException();
+        }
+
         public event PropertyChangedEventHandler PropertyChanged;
         protected void NotifyPropertyChanged(String info)
         {
@@ -175,6 +206,7 @@ namespace TalebookRebuilt.ViewModels
 
             //Define commands
             this.updateSizeCommand = new DelegateCommand<object>(this.OnUpdateSizeCommand);
+            this.pageFlippedCommand = new DelegateCommand<object>(this.OnPageFlippedCommand);
 
             //Initialize CurrentPage
             this.DrawnPages = new ObservableCollection<FrameworkElement>();
@@ -261,7 +293,7 @@ namespace TalebookRebuilt.ViewModels
                 pageOne.HorizontalAlignment = HorizontalAlignment.Left;
                 pageOne.VerticalAlignment = VerticalAlignment.Top;
                 pageOne.IsDoubleTapEnabled = false;
-                pageOne.IsHoldingEnabled = false;                
+                pageOne.IsHoldingEnabled = false;
                 pageOne.SetValue(Helpers.Properties.HtmlProperty, pageContent);
                 pageOne.SetBinding(RichTextBlock.MaxWidthProperty, new Binding
                     {
