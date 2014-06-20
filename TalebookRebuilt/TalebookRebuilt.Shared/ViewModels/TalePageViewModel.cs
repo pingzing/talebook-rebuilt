@@ -144,13 +144,12 @@ namespace TalebookRebuilt.ViewModels
                     pageNumbers.Add(DrawnPages.IndexOf(subpage));
                 }                
             }
-            int start = pageNumbers[pageToRestore];
-            //Iterate until we reach the next RichTextBlock in line
+            int start = pageNumbers[pageToRestore];            
             for (int i = start; i < flip.Items.Count; i++)
             {
                 if(i != start && flip.Items[i] is RichTextBlock)
                 {
-                    break;  //Bail if we get to the next page
+                    break;  //Only check the current page (pages begin with a RichTextBlock)
                 }
                 dynamic pageToInspect = flip.Items[i];
                 if (pageToInspect.ContentEnd.Offset >= locToRestore && pageToInspect.ContentStart.Offset <= locToRestore)
@@ -163,7 +162,8 @@ namespace TalebookRebuilt.ViewModels
             if(restoreIndex != -1)
             {
                 flip.SelectedIndex = restoreIndex;
-                CurrentPageNum = pageToRestore;
+                //Resize timing happens non-deterministically and may have wiped this out CurrentPageNum. Restore it, just in case
+                CurrentPageNum = pageToRestore; 
             }
         }
 
@@ -178,6 +178,8 @@ namespace TalebookRebuilt.ViewModels
             }
         }
 
+        //TODO: Update subpage number, display to user as pages?
+        //Update current-location?
         private void OnPageFlippedCommand(object np)
         {
             var rtb = np as RichTextBlock;
@@ -186,27 +188,24 @@ namespace TalebookRebuilt.ViewModels
             {
                 int previousPageIndex = previousPage == null ? 0 : DrawnPages.IndexOf(previousPage);
                 int newPageIndex = DrawnPages.IndexOf(rtb);
-                //We went forward
+                //Forward: RTB/O -> RTB
                 if(newPageIndex > previousPageIndex)
                 {                    
                     CurrentPageNum++;
-                }
-               //We went backward
+                }               
+                //Backward: RTB <- RTB
                 else if(newPageIndex < previousPageIndex && previousPage as RichTextBlock != null)
                 {
                     CurrentPageNum--;
                 }
                 previousPage = rtb;
-            }
+            }            
             if(rtbo != null)
             {
                 int previousPageIndex = previousPage == null ? 0 : DrawnPages.IndexOf(previousPage);
                 int newPageIndex = DrawnPages.IndexOf(rtbo);
-                if (newPageIndex > previousPageIndex)
-                {
-                    //Do nothing
-                }
-                else if (newPageIndex < previousPageIndex && previousPage as RichTextBlock != null)
+                //Backward: RTB <- RTBO
+                if (newPageIndex < previousPageIndex && previousPage as RichTextBlock != null)
                 {
                     CurrentPageNum--;
                 }
@@ -303,12 +302,14 @@ namespace TalebookRebuilt.ViewModels
             {
                 RichTextBlockOverflow lastOverflow;
                 lastOverflow = DrawOnePage(null, page.PageContent);
-                DrawnPages.Add(lastOverflow);
+                if (lastOverflow != null) { DrawnPages.Add(lastOverflow); }
 
-                while (lastOverflow.HasOverflowContent)
+                //If we do the multipass idea, this is the part we'd repeat: just check if we have any dangling RTB/Os at the end
+                //that have OverflowContent, or if we have two RTBOs in a row without OverflowContent.
+                while (lastOverflow != null && lastOverflow.HasOverflowContent)
                 {
                     lastOverflow = DrawOnePage(lastOverflow, page.PageContent);
-                }
+                }               
             }
         }
 
@@ -316,7 +317,7 @@ namespace TalebookRebuilt.ViewModels
         private RichTextBlockOverflow DrawOnePage(RichTextBlockOverflow lastOverflow, string pageContent)
         {
             bool isFirstPage = lastOverflow == null;
-            RichTextBlockOverflow rtbo = new RichTextBlockOverflow();
+            RichTextBlockOverflow rtbo = null;
 
             if (isFirstPage)
             {
@@ -344,12 +345,14 @@ namespace TalebookRebuilt.ViewModels
                 DrawnPages.Add(pageOne);
                 if (pageOne.HasOverflowContent)
                 {
+                    rtbo = new RichTextBlockOverflow();
                     pageOne.OverflowContentTarget = rtbo;
                     rtbo.Measure(new Size(this.TextboxMaxWidth, this.TextboxMaxHeight));
                 }
             }
             else
             {
+                rtbo = new RichTextBlockOverflow();
                 lastOverflow.SetBinding(RichTextBlockOverflow.MaxWidthProperty, new Binding
                     {
                         Source = TextboxMaxWidth,
@@ -361,7 +364,7 @@ namespace TalebookRebuilt.ViewModels
                         Path = new PropertyPath("MaxHeight")
                     });
                 if (lastOverflow.HasOverflowContent)
-                {
+                {                    
                     lastOverflow.OverflowContentTarget = rtbo;
                     lastOverflow.Measure(new Size(this.TextboxMaxWidth, this.TextboxMaxHeight));
                     rtbo.Measure((new Size(this.TextboxMaxWidth, this.TextboxMaxHeight)));
