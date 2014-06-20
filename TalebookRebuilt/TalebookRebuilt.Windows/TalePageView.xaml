@@ -60,6 +60,9 @@
             		<core:EventTriggerBehavior EventName="SizeChanged">
             			<core:InvokeCommandAction Command="{Binding UpdateSizeCommand}" CommandParameter="{Binding ElementName=TextFlipView}"/>
             		</core:EventTriggerBehavior>
+            		<core:EventTriggerBehavior EventName="SelectionChanged">
+            			<core:InvokeCommandAction Command="{Binding PageFlippedCommand}" CommandParameter="{Binding SelectedItem, ElementName=TextFlipView}"/>
+            		</core:EventTriggerBehavior>
             	</i:Interaction.Behaviors>
                 <FlipView.ItemsPanel>
                     <ItemsPanelTemplate>
@@ -68,6 +71,7 @@
                 </FlipView.ItemsPanel>
             </FlipView>
             <Button Content="Button" HorizontalAlignment="Left" Height="42" Margin="556,526,0,0" VerticalAlignment="Top" Width="127" Click="Button_Click_1"/>
+            <TextBlock Grid.Column="1" HorizontalAlignment="Left" Margin="628,605,0,0" TextWrapping="Wrap" Text="{Binding CurrentPageNum}" VerticalAlignment="Top"/>
         </Grid>
     </Grid>
 </Page>

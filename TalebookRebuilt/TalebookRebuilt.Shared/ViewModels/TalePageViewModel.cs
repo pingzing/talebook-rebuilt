@@ -21,6 +21,7 @@ namespace TalebookRebuilt.ViewModels
     public class TalePageViewModel : INotifyPropertyChanged
     {
         private const int HEADER_HEIGHT = 120;
+        private FrameworkElement previousPage = null;
 
         private TaleBook currentBook;
         public TaleBook CurrentBook
@@ -103,7 +104,7 @@ namespace TalebookRebuilt.ViewModels
             //Get current character-location
             FlipView flip = itemSource as FlipView;
             int locToRestore = 0;
-            int pageToRestore = 0;
+            int pageToRestore = CurrentPageNum;
             if (flip != null)
             {
                 var currRtb = flip.SelectedItem;
@@ -119,48 +120,50 @@ namespace TalebookRebuilt.ViewModels
 
             DrawPages();
             if (flip != null)
-            {
+            {                
                 flip.UpdateLayout();
                 var dispatcher = Windows.UI.Core.CoreWindow.GetForCurrentThread().Dispatcher;
                 //Force this to run on the UI thread, so we KNOW it'll wait until the text is 
                 //properly distributed to all the RTBOverflows
                 dispatcher.RunAsync(CoreDispatcherPriority.Normal, () =>
                     {
-                        RestoreReadingLocation(flip, locToRestore);
+                        RestoreReadingLocation(flip, locToRestore, pageToRestore);
                     });
             }
         }
 
-        //If we have the old character-location, restore the reader's current page
-        //Search through currentPage's elements until we find the correct offset. 
-        //set flip.SelectedIndex to that element's index
-        private void RestoreReadingLocation(FlipView flip, int locToRestore)
-        {
+        //If we have the old character-location, restore the reader's current page        
+        private void RestoreReadingLocation(FlipView flip, int locToRestore, int pageToRestore)
+        {            
+            List<int> pageNumbers = new List<int>(DrawnPages.Count);
             int restoreIndex = -1;
             foreach (var subpage in DrawnPages)
             {
                 if (subpage is RichTextBlock)
                 {
-                    if (((RichTextBlock)subpage).ContentEnd.Offset >= locToRestore
-                        && !(((RichTextBlock)subpage).ContentStart.Offset > locToRestore))
-                    {
-                        restoreIndex = DrawnPages.IndexOf(subpage);
-                        break;
-                    }
-                }
-                else if (subpage is RichTextBlockOverflow)
+                    pageNumbers.Add(DrawnPages.IndexOf(subpage));
+                }                
+            }
+            int start = pageNumbers[pageToRestore];
+            //Iterate until we reach the next RichTextBlock in line
+            for (int i = start; i < flip.Items.Count; i++)
+            {
+                if(i != start && flip.Items[i] is RichTextBlock)
                 {
-                    if (((RichTextBlockOverflow)subpage).ContentEnd.Offset >= locToRestore
-                        && !(((RichTextBlockOverflow)subpage).ContentStart.Offset > locToRestore))
-                    {
-                        restoreIndex = DrawnPages.IndexOf(subpage);
-                        break;
-                    }
+                    break;  //Bail if we get to the next page
+                }
+                dynamic pageToInspect = flip.Items[i];
+                if (pageToInspect.ContentEnd.Offset >= locToRestore && pageToInspect.ContentStart.Offset <= locToRestore)
+                {
+                    restoreIndex = i;
+                    break;
                 }
             }
-            if (restoreIndex != -1)
+
+            if(restoreIndex != -1)
             {
                 flip.SelectedIndex = restoreIndex;
+                CurrentPageNum = pageToRestore;
             }
         }
 
@@ -175,9 +178,40 @@ namespace TalebookRebuilt.ViewModels
             }
         }
 
-        private void OnPageFlippedCommand(object obj)
+        private void OnPageFlippedCommand(object np)
         {
-            throw new NotImplementedException();
+            var rtb = np as RichTextBlock;
+            var rtbo = np as RichTextBlockOverflow;
+            if(rtb != null)
+            {
+                int previousPageIndex = previousPage == null ? 0 : DrawnPages.IndexOf(previousPage);
+                int newPageIndex = DrawnPages.IndexOf(rtb);
+                //We went forward
+                if(newPageIndex > previousPageIndex)
+                {                    
+                    CurrentPageNum++;
+                }
+               //We went backward
+                else if(newPageIndex < previousPageIndex && previousPage as RichTextBlock != null)
+                {
+                    CurrentPageNum--;
+                }
+                previousPage = rtb;
+            }
+            if(rtbo != null)
+            {
+                int previousPageIndex = previousPage == null ? 0 : DrawnPages.IndexOf(previousPage);
+                int newPageIndex = DrawnPages.IndexOf(rtbo);
+                if (newPageIndex > previousPageIndex)
+                {
+                    //Do nothing
+                }
+                else if (newPageIndex < previousPageIndex && previousPage as RichTextBlock != null)
+                {
+                    CurrentPageNum--;
+                }
+                previousPage = rtbo;
+            }
         }
 
         public event PropertyChangedEventHandler PropertyChanged;
