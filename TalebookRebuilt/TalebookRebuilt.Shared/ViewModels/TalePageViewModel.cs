@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Newtonsoft.Json;
+using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
@@ -8,6 +9,7 @@ using System.Windows.Input;
 using TalebookRebuilt.Helpers;
 using TalebookRebuilt.Models;
 using Windows.Foundation;
+using Windows.Storage;
 using Windows.UI;
 using Windows.UI.Core;
 using Windows.UI.Xaml;
@@ -15,6 +17,7 @@ using Windows.UI.Xaml.Controls;
 using Windows.UI.Xaml.Data;
 using Windows.UI.Xaml.Documents;
 using Windows.UI.Xaml.Media;
+using Windows.UI.Xaml.Media.Imaging;
 
 namespace TalebookRebuilt.ViewModels
 {
@@ -89,6 +92,17 @@ namespace TalebookRebuilt.ViewModels
             }
         }
 
+        private Color pageColor;
+        public Color PageColor
+        {
+            get { return pageColor; }
+            set
+            {
+                this.pageColor = value;
+                NotifyPropertyChanged("PageColor");
+            }
+        }
+
         private DelegateCommand<object> updateSizeCommand;
         public DelegateCommand<object> UpdateSizeCommand
         {
@@ -118,7 +132,10 @@ namespace TalebookRebuilt.ViewModels
                 }
             }
 
-            DrawPages();
+            if(CurrentBook != null)
+            {
+                DrawPages();
+            }            
             if (flip != null)
             {                
                 flip.UpdateLayout();
@@ -268,33 +285,38 @@ namespace TalebookRebuilt.ViewModels
 
         }
 
+        //TODO: Refactor all this into something a little more dynamic/generic
         async private void BuildPages()
-        {
-            //Test code. This method probably belongs somewhere in TaleBook.cs
-            string filePath = "Snowbird\\Snowbird.html";
+        {            
+            string filePath = "Snowbird\\text\\Snowbird.html"; //Make this change based on which tale was selected on the previous page
             string rawHtml = await BookBuilder.HtmlToString(filePath);
             List<string> slicedPages = BookBuilder.GetSlicedPages(rawHtml);
 
             currentBook = new TaleBook();
             currentBook.Pages = new List<TalePage>();
-            //TODO: Generate/have an XML file that defines colors/images for each page?
+
+            //TODO: Read story's JSON file to get each page's info
+            StorageFolder folder = Windows.ApplicationModel.Package.Current.InstalledLocation;
+            folder = await folder.GetFolderAsync("Tales");
+            var file = await folder.GetFileAsync("Snowbird\\snowbird.json");
+            var stream = await file.OpenStreamForReadAsync();
+            JsonTextReader jtr = new JsonTextReader(new StreamReader(stream));
+            JsonSerializer jss = new JsonSerializer();
+            jss.Deserialize(jtr, typeof(TaleBook)); //See http://james.newtonking.com/json/help/index.html?topic=html/SerializationCallbacks.htm for fixing Image <-> Path issue
+
             int pageNum = 0;
             foreach (var page in slicedPages)
             {
                 currentBook.Pages.Add(new TalePage(page, null, Colors.Black, pageNum));
                 pageNum++;
             }
-
-            currentBook.Cover = new Image();
+            currentBook.Cover = null;
             currentBook.Description = "Test description";
             currentBook.Title = "Test Title";
             CurrentBook = currentBook;
-            DrawPages();
-            //End test code
+            DrawPages();            
         }
 
-        //IDEA: Multi-pass rendering? One pass to get everything down, then make another pass on the UI thread to see
-        //if we missed anything/rendered too much?
         private void DrawPages()
         {
             DrawnPages.Clear();
@@ -303,9 +325,7 @@ namespace TalebookRebuilt.ViewModels
                 RichTextBlockOverflow lastOverflow;
                 lastOverflow = DrawOnePage(null, page.PageContent);
                 if (lastOverflow != null) { DrawnPages.Add(lastOverflow); }
-
-                //If we do the multipass idea, this is the part we'd repeat: just check if we have any dangling RTB/Os at the end
-                //that have OverflowContent, or if we have two RTBOs in a row without OverflowContent.
+                
                 while (lastOverflow != null && lastOverflow.HasOverflowContent)
                 {
                     lastOverflow = DrawOnePage(lastOverflow, page.PageContent);

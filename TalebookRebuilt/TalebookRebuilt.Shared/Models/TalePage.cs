@@ -1,47 +1,45 @@
-﻿using System;
+﻿using Newtonsoft.Json;
+using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Text;
+using Windows.Storage;
 using Windows.UI;
 using Windows.UI.Xaml.Controls;
+using Windows.UI.Xaml.Media.Imaging;
 
 namespace TalebookRebuilt.Models
 {
     public class TalePage
     {
+        [JsonIgnore]
         public string PageContent { get; set; }
-        public Image PageImage { get; set; }
+        
+        [JsonIgnore]
+        public BitmapImage PageImage { get; set; }       
         public Color PageColor { get; set; }
         public int PageNumber { get; set; }
-        public List<TaleSubpage> Subpages {get; set;}
 
-        //Idea: Create a tale page such that it holds the maximum amount of text possible for the given device/resolution.
-        //Break pages up based on images. 
-        //Have a collection of subpages that are a subset of a given page's PageContent. 
-        //Have the ViewModel's CurrentPage map to a subpage.
-        public TalePage(string pageContent, Image pageImage, Color pageColor)
+        public TalePage(string pageContent, BitmapImage pageImage, Color pageColor)
         {
             PageContent = pageContent;
             PageImage = pageImage;
-            PageColor = pageColor;
-            Subpages = new List<TaleSubpage>();
+            PageColor = pageColor;            
         }
 
-        public TalePage(string pageContent, Image pageImage, Color pageColor, int pageNumber)
+        public TalePage(string pageContent, BitmapImage pageImage, Color pageColor, int pageNumber)
         {
             PageContent = pageContent;
             PageImage = pageImage;
             PageColor = pageColor;
-            PageNumber = pageNumber;
-            Subpages = new List<TaleSubpage>();
+            PageNumber = pageNumber;            
         }
 
         public TalePage()
         {
             PageContent = "I'm a test page!";
             PageImage = null;
-            PageColor = Colors.Black;
-            Subpages = new List<TaleSubpage>();
+            PageColor = Colors.Black;            
         }
     }
 }

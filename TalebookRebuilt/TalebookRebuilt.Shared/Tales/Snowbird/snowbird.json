@@ -1,0 +1,38 @@
+{
+	"title": "Snowbird",
+	"description": "",
+	"cover": "Snowbird\\images\\cover.jpg",
+	"pages":
+	[
+		{
+			"number": 1,
+			"image": "Snowbird\\images\\snowbird.jpg",
+			"color": "Colors.Grey"
+		},
+		{
+			"number": 2,
+			"image": "Snowbird\\images\\snowbank.jpg",
+			"color": "Colors.LightGrey"
+		},
+		{
+			"number": 3,
+			"image": "Snowbird\\images\\hall.jpg",
+			"color": "Colors.LightGrey"
+		},
+		{
+			"number": 4,
+			"image": "Snowbird\\images\\gloomyroom.jpg",
+			"color": "Colors.LightBlue"
+		},
+		{
+			"number": 5,
+			"image": "Snowbird\\images\\snowbird.jpg",
+			"color": "Colors.LightBlue"
+		},
+		{
+			"number": 6,
+			"image": null,
+			"color": "Colors.Black"
+		},
+	]
+}

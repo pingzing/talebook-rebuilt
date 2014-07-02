@@ -20,11 +20,16 @@
     <Compile Include="$(MSBuildThisFileDirectory)Helpers\RichTextBlockProperties.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Models\TaleBook.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Models\TalePage.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)Models\TaleSubpage.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)ViewModels\TalePageViewModel.cs" />
   </ItemGroup>
   <ItemGroup>
-    <Content Include="$(MSBuildThisFileDirectory)Tales\Snowbird\Snowbird.html" />
-    <Content Include="$(MSBuildThisFileDirectory)Tales\Snowbird\Snowbird.css" />
+    <Content Include="$(MSBuildThisFileDirectory)Tales\Snowbird\images\gloomyroom.jpg" />
+    <Content Include="$(MSBuildThisFileDirectory)Tales\Snowbird\images\hall.jpg" />
+    <Content Include="$(MSBuildThisFileDirectory)Tales\Snowbird\images\snowbank.jpg" />
+    <Content Include="$(MSBuildThisFileDirectory)Tales\Snowbird\images\snowbird.jpg" />
+    <Content Include="$(MSBuildThisFileDirectory)Tales\Snowbird\images\whitelight.jpg" />
+    <Content Include="$(MSBuildThisFileDirectory)Tales\Snowbird\snowbird.json" />
+    <Content Include="$(MSBuildThisFileDirectory)Tales\Snowbird\text\Snowbird.css" />
+    <Content Include="$(MSBuildThisFileDirectory)Tales\Snowbird\text\Snowbird.html" />
   </ItemGroup>
 </Project>
