@@ -18,6 +18,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)Helpers\BookBuilder.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Helpers\DelegateCommand.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Helpers\RichTextBlockProperties.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Helpers\Utilities.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Models\TaleBook.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Models\TalePage.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)ViewModels\TalePageViewModel.cs" />

@@ -16,6 +16,8 @@ namespace TalebookRebuilt.Models
         public string Description { get; set; }        
         [JsonIgnore]
         public BitmapImage Cover { get; set; }               
-        public List<TalePage> Pages { get; set; }
+        public List<TalePage> Pages { get; set; }       
     }
+
+   
 }

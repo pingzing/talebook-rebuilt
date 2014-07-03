@@ -1,10 +1,12 @@
 ﻿using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.IO;
 using System.Text;
+using System.Linq;
 using System.Windows.Input;
 using TalebookRebuilt.Helpers;
 using TalebookRebuilt.Models;
@@ -132,12 +134,12 @@ namespace TalebookRebuilt.ViewModels
                 }
             }
 
-            if(CurrentBook != null)
+            if (CurrentBook != null)
             {
                 DrawPages();
-            }            
+            }
             if (flip != null)
-            {                
+            {
                 flip.UpdateLayout();
                 var dispatcher = Windows.UI.Core.CoreWindow.GetForCurrentThread().Dispatcher;
                 //Force this to run on the UI thread, so we KNOW it'll wait until the text is 
@@ -151,7 +153,7 @@ namespace TalebookRebuilt.ViewModels
 
         //If we have the old character-location, restore the reader's current page        
         private void RestoreReadingLocation(FlipView flip, int locToRestore, int pageToRestore)
-        {            
+        {
             List<int> pageNumbers = new List<int>(DrawnPages.Count);
             int restoreIndex = -1;
             foreach (var subpage in DrawnPages)
@@ -159,12 +161,12 @@ namespace TalebookRebuilt.ViewModels
                 if (subpage is RichTextBlock)
                 {
                     pageNumbers.Add(DrawnPages.IndexOf(subpage));
-                }                
+                }
             }
-            int start = pageNumbers[pageToRestore];            
+            int start = pageNumbers[pageToRestore];
             for (int i = start; i < flip.Items.Count; i++)
             {
-                if(i != start && flip.Items[i] is RichTextBlock)
+                if (i != start && flip.Items[i] is RichTextBlock)
                 {
                     break;  //Only check the current page (pages begin with a RichTextBlock)
                 }
@@ -176,11 +178,11 @@ namespace TalebookRebuilt.ViewModels
                 }
             }
 
-            if(restoreIndex != -1)
+            if (restoreIndex != -1)
             {
                 flip.SelectedIndex = restoreIndex;
                 //Resize timing happens non-deterministically and may have wiped this out CurrentPageNum. Restore it, just in case
-                CurrentPageNum = pageToRestore; 
+                CurrentPageNum = pageToRestore;
             }
         }
 
@@ -188,8 +190,8 @@ namespace TalebookRebuilt.ViewModels
         public DelegateCommand<object> PageFlippedCommand
         {
             get { return pageFlippedCommand; }
-            set 
-            { 
+            set
+            {
                 pageFlippedCommand = value;
                 NotifyPropertyChanged("PageFlippedCommand");
             }
@@ -201,23 +203,23 @@ namespace TalebookRebuilt.ViewModels
         {
             var rtb = np as RichTextBlock;
             var rtbo = np as RichTextBlockOverflow;
-            if(rtb != null)
+            if (rtb != null)
             {
                 int previousPageIndex = previousPage == null ? 0 : DrawnPages.IndexOf(previousPage);
                 int newPageIndex = DrawnPages.IndexOf(rtb);
                 //Forward: RTB/O -> RTB
-                if(newPageIndex > previousPageIndex)
-                {                    
+                if (newPageIndex > previousPageIndex)
+                {
                     CurrentPageNum++;
-                }               
+                }
                 //Backward: RTB <- RTB
-                else if(newPageIndex < previousPageIndex && previousPage as RichTextBlock != null)
+                else if (newPageIndex < previousPageIndex && previousPage as RichTextBlock != null)
                 {
                     CurrentPageNum--;
                 }
                 previousPage = rtb;
-            }            
-            if(rtbo != null)
+            }
+            if (rtbo != null)
             {
                 int previousPageIndex = previousPage == null ? 0 : DrawnPages.IndexOf(previousPage);
                 int newPageIndex = DrawnPages.IndexOf(rtbo);
@@ -287,7 +289,7 @@ namespace TalebookRebuilt.ViewModels
 
         //TODO: Refactor all this into something a little more dynamic/generic
         async private void BuildPages()
-        {            
+        {
             string filePath = "Snowbird\\text\\Snowbird.html"; //Make this change based on which tale was selected on the previous page
             string rawHtml = await BookBuilder.HtmlToString(filePath);
             List<string> slicedPages = BookBuilder.GetSlicedPages(rawHtml);
@@ -299,22 +301,45 @@ namespace TalebookRebuilt.ViewModels
             StorageFolder folder = Windows.ApplicationModel.Package.Current.InstalledLocation;
             folder = await folder.GetFolderAsync("Tales");
             var file = await folder.GetFileAsync("Snowbird\\snowbird.json");
-            var stream = await file.OpenStreamForReadAsync();
-            JsonTextReader jtr = new JsonTextReader(new StreamReader(stream));
-            JsonSerializer jss = new JsonSerializer();
-            jss.Deserialize(jtr, typeof(TaleBook)); //See http://james.newtonking.com/json/help/index.html?topic=html/SerializationCallbacks.htm for fixing Image <-> Path issue
-
-            int pageNum = 0;
-            foreach (var page in slicedPages)
+            JToken token;
+            using (var stream = await file.OpenStreamForReadAsync())
             {
-                currentBook.Pages.Add(new TalePage(page, null, Colors.Black, pageNum));
+                JsonTextReader jtr = new JsonTextReader(new StreamReader(stream));
+                token = JToken.Load(jtr);
+            }
+
+            Color pageColor = new Color();
+            BitmapImage pageImage;
+            int pageNum = 0;
+            foreach (var pageContent in slicedPages)
+            {
+                pageImage = null; //Reset from previous iteration.
+                //JSON pages are 1-indexed for ease-of-writing. Internally, they're zero-indexed.
+                JToken jsonPage = token.SelectToken("pages").Where(pg => (int)pg["pagenumber"] == pageNum + 1).FirstOrDefault();
+                if (jsonPage != null)
+                {                    
+                    string colorString = (string)jsonPage.SelectToken("pagecolor");
+                    if (colorString != null)
+                    {
+                        pageColor = Utilities.StringToColor(colorString);
+                    }
+
+                    string imagePath = (string)jsonPage.SelectToken("pageimage");
+                    if (imagePath != null)
+                    {
+                        var imageStream = await folder.OpenStreamForReadAsync(imagePath);
+                        pageImage = new BitmapImage();
+                        pageImage.SetSource(imageStream.AsRandomAccessStream());
+                    }
+                }
+                currentBook.Pages.Add(new TalePage(pageContent, pageImage, pageColor, pageNum));
                 pageNum++;
             }
             currentBook.Cover = null;
             currentBook.Description = "Test description";
             currentBook.Title = "Test Title";
             CurrentBook = currentBook;
-            DrawPages();            
+            DrawPages();
         }
 
         private void DrawPages()
@@ -325,11 +350,11 @@ namespace TalebookRebuilt.ViewModels
                 RichTextBlockOverflow lastOverflow;
                 lastOverflow = DrawOnePage(null, page.PageContent);
                 if (lastOverflow != null) { DrawnPages.Add(lastOverflow); }
-                
+
                 while (lastOverflow != null && lastOverflow.HasOverflowContent)
                 {
                     lastOverflow = DrawOnePage(lastOverflow, page.PageContent);
-                }               
+                }
             }
         }
 
@@ -384,7 +409,7 @@ namespace TalebookRebuilt.ViewModels
                         Path = new PropertyPath("MaxHeight")
                     });
                 if (lastOverflow.HasOverflowContent)
-                {                    
+                {
                     lastOverflow.OverflowContentTarget = rtbo;
                     lastOverflow.Measure(new Size(this.TextboxMaxWidth, this.TextboxMaxHeight));
                     rtbo.Measure((new Size(this.TextboxMaxWidth, this.TextboxMaxHeight)));
